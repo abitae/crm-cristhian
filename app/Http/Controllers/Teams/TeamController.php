@@ -40,7 +40,7 @@ class TeamController extends Controller
 
         $team = $createTeam->handle($request->user(), $request->validated('name'));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team created.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Equipo creado.')]);
 
         return to_route('teams.edit', ['team' => $team->slug]);
     }
@@ -104,7 +104,7 @@ class TeamController extends Controller
             return $team;
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Equipo actualizado.')]);
 
         return to_route('teams.edit', ['team' => $team->slug]);
     }
@@ -117,6 +117,11 @@ class TeamController extends Controller
         abort_unless($request->user()->belongsToTeam($team), 403);
 
         $request->user()->switchTeam($team);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Cambiaste al equipo ":name".', ['name' => $team->name]),
+        ]);
 
         return back();
     }
@@ -142,7 +147,7 @@ class TeamController extends Controller
             $user->switchTeam($fallbackTeam);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the team ":name"', ['name' => $team->name])]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Saliste del equipo ":name".', ['name' => $team->name])]);
 
         return to_route('teams.index');
     }
@@ -171,7 +176,7 @@ class TeamController extends Controller
             $user->switchTeam($fallbackTeam);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Equipo eliminado.')]);
 
         return to_route('teams.index');
     }

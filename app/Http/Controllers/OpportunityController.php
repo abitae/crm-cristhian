@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Opportunity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class OpportunityController extends Controller
 {
@@ -13,6 +14,11 @@ class OpportunityController extends Controller
     {
         abort_unless($opportunity->team_id === $request->user()->current_team_id, 403);
         $opportunity->update($request->validate(['stage' => ['required', 'in:Prospección,Calificación,Propuesta,Negociación,Ganada']]));
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Etapa actualizada.'),
+        ]);
 
         return back();
     }
@@ -30,6 +36,11 @@ class OpportunityController extends Controller
         $opportunity->company = $client->company ?? $client->name;
         $opportunity->team_id = $request->user()->current_team_id;
         $opportunity->save();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Oportunidad creada.'),
+        ]);
 
         return back();
     }

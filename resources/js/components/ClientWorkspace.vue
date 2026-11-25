@@ -3,7 +3,6 @@ import { useForm, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
 import {
     ArrowRight,
-    Check,
     ChevronDown,
     CircleDot,
     Columns3,
@@ -30,6 +29,7 @@ import {
     type ClientHistory,
     type ClientOption,
 } from '@/lib/clients';
+import { notifyError, notifySuccess } from '@/lib/flashToast';
 import type { Team, User } from '@/types';
 import TablePager from './TablePager.vue';
 import ClientKanbanColumn from './ClientKanbanColumn.vue';
@@ -75,16 +75,14 @@ const palette = ['#99a1b0', '#f7a36d', '#9a87d6', '#6aafa2', '#709ed8'];
 function move(client: Client, id: number | null) {
     if (!shared.props.currentTeam || moveForm.processing) return;
     moveForm.status = id;
-    feedback.value = '';
     moveForm.patch(changeStatus.url([shared.props.currentTeam.slug, client.id]), {
         preserveScroll: true,
         onSuccess: () => {
             refresh.value++;
-            feedback.value = 'Estado actualizado.';
             if (editing.value?.id === client.id) loadHistories(client);
         },
         onError: () => {
-            feedback.value = 'No se pudo guardar el cambio de estado.';
+            notifyError('No se pudo guardar el cambio de estado.');
         },
     });
 }
@@ -97,7 +95,6 @@ function createColumn() {
             columnForm.reset();
             newColumn.value = false;
             status.value = '';
-            feedback.value = 'Estado agregado al tablero.';
         },
     });
 }
@@ -128,7 +125,6 @@ const rows = computed(() =>
 const hasFilters = computed(() => !!(tag.value || status.value || search.value));
 const editing = ref<Client | null>(null);
 const open = ref(false);
-const feedback = ref('');
 const panel = ref<'datos' | 'historial'>('datos');
 const histories = ref<ClientHistory[]>([]);
 const historiesLoading = ref(false);
@@ -207,7 +203,6 @@ watch(
     () => props.section,
     () => {
         open.value = false;
-        feedback.value = '';
     },
 );
 
@@ -266,7 +261,6 @@ function showForm(client?: Client) {
     editing.value = client ?? null;
     form.reset();
     form.clearErrors();
-    feedback.value = '';
     panel.value = 'datos';
     note.value = '';
     noteError.value = '';
@@ -320,7 +314,7 @@ async function saveNote() {
         const item = pushDemoHistory(editing.value.id, { type: 'note', body });
         histories.value = [item, ...histories.value];
         note.value = '';
-        feedback.value = 'Nota guardada en el historial.';
+        notifySuccess('Nota guardada en el historial.');
         return;
     }
     if (!shared.props.currentTeam || noteSaving.value) return;
@@ -346,9 +340,10 @@ async function saveNote() {
         const result = await response.json();
         histories.value = [result.data, ...histories.value];
         note.value = '';
-        feedback.value = 'Nota guardada en el historial.';
+        notifySuccess('Nota guardada en el historial.');
     } catch {
         noteError.value = 'No se pudo guardar la nota.';
+        notifyError('No se pudo guardar la nota.');
     } finally {
         noteSaving.value = false;
     }
@@ -362,7 +357,9 @@ function save() {
     const previousStatus = editing.value?.options.find((o) => o.kind === 'status')?.id ?? null;
     const done = () => {
         open.value = false;
-        feedback.value = editing.value ? 'Cliente actualizado.' : 'Cliente creado.';
+        if (props.demo) {
+            notifySuccess(editing.value ? 'Cliente actualizado.' : 'Cliente creado.');
+        }
         if (!editing.value) clear();
         refresh.value++;
     };
@@ -424,7 +421,6 @@ function save() {
 function addOption() {
     const name = optionForm.name.trim();
     optionForm.clearErrors();
-    feedback.value = '';
     if (
         !name ||
         options.value.some(
@@ -440,7 +436,11 @@ function addOption() {
         return;
     }
     const done = () => {
-        feedback.value = optionForm.kind === 'tag' ? 'Etiqueta creada.' : 'Estado creado.';
+        if (props.demo) {
+            notifySuccess(
+                optionForm.kind === 'tag' ? 'Etiqueta creada.' : 'Estado creado.',
+            );
+        }
         optionForm.reset('name');
     };
     if (props.demo) {
@@ -494,10 +494,6 @@ function addOption() {
                 <Plus :size="16" /> Nuevo cliente
             </button>
         </section>
-
-        <p v-if="feedback" class="client-feedback" role="status">
-            <Check :size="15" />{{ feedback }}
-        </p>
 
         <section v-if="section === 'Clientes' || board" class="panel table-panel">
             <div class="card-head">
@@ -976,7 +972,6 @@ function addOption() {
 }
 .directory-head,
 .inline-title,
-.client-feedback,
 .client-search,
 .filter-select,
 .identity,
@@ -1138,11 +1133,6 @@ function addOption() {
 .dialog legend {
     font-size: 12px;
     font-weight: 600;
-}
-.client-feedback {
-    margin-bottom: 12px;
-    color: #37734e;
-    font-size: 13px;
 }
 .error {
     color: #b63e38 !important;

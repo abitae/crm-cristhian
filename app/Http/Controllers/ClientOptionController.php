@@ -6,6 +6,7 @@ use App\Models\ClientOption;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ClientOptionController extends Controller
 {
@@ -18,6 +19,11 @@ class ClientOptionController extends Controller
         ], ['name.unique' => 'Ya existe una opción con ese nombre.']));
         $option->user_id = $userId;
         $option->save();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $option->kind === 'tag' ? __('Etiqueta creada.') : __('Estado creado.'),
+        ]);
 
         return back();
     }

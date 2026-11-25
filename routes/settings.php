@@ -22,6 +22,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('administracion/usuarios', [CrmUserController::class, 'store'])
         ->middleware([RoleMiddleware::using('super-admin'), 'can:crm.users.create'])
         ->name('crm-users.store');
+    Route::put('administracion/usuarios/{user}/password', [CrmUserController::class, 'updatePassword'])
+        ->middleware([RoleMiddleware::using('super-admin'), 'can:crm.users.create'])
+        ->name('crm-users.password');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('settings/security', [SecurityController::class, 'edit'])

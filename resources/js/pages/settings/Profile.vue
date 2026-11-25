@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, UserRound } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/DeleteUser.vue';
+import { notifySuccess } from '@/lib/flashToast';
 import { dashboard } from '@/routes';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
@@ -51,6 +52,12 @@ const dashboardUrl = computed(() =>
         ? dashboard(page.props.currentTeam.slug).url
         : '/',
 );
+
+onMounted(() => {
+    if (page.props.status === 'verification-link-sent') {
+        notifySuccess('Se envió un nuevo enlace de verificación a tu correo.');
+    }
+});
 </script>
 
 <template>
@@ -146,12 +153,6 @@ const dashboardUrl = computed(() =>
                     <Link :href="send()" as="button">
                         Reenviar correo de verificación
                     </Link>
-                    <p
-                        v-if="page.props.status === 'verification-link-sent'"
-                        class="success-note"
-                    >
-                        Se envió un nuevo enlace de verificación a tu correo.
-                    </p>
                 </div>
 
                 <button

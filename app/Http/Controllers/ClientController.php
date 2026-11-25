@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ClientController extends Controller
 {
@@ -80,6 +81,11 @@ class ClientController extends Controller
             $this->recordStatusChange($client, $user, $previousStatusId, $data['status'] ?? null);
         });
 
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $creating ? __('Cliente creado.') : __('Cliente actualizado.'),
+        ]);
+
         return back();
     }
 
@@ -100,6 +106,11 @@ class ClientController extends Controller
             }
             $this->recordStatusChange($client, $user, $previousStatusId, $data['status']);
         });
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Estado actualizado.'),
+        ]);
 
         return back();
     }

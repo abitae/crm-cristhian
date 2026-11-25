@@ -13,7 +13,6 @@ import {
     Users,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import { Toaster } from '@/components/ui/sonner';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
@@ -166,8 +165,6 @@ const activeTitle = computed(
                 <slot />
             </main>
         </div>
-
-        <Toaster />
     </div>
 </template>
 

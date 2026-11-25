@@ -3,23 +3,25 @@ import { Head,Link,useForm,usePage } from '@inertiajs/vue3';
 import { computed,onMounted,onUnmounted,ref,watch } from 'vue';
 import ClientWorkspace from './ClientWorkspace.vue';
 import CrmAdministration from './CrmAdministration.vue';
+import type { AdminTeam, AdminUser } from './CrmAdministration.vue';
 import type { Client } from '@/lib/clients';
 import {ShieldCheck} from '@lucide/vue';
 import TablePager from './TablePager.vue';
-import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Bell,BriefcaseBusiness,Building2,CalendarDays,ChartNoAxesCombined,Check,ChevronDown,ChevronRight,CircleDollarSign,CircleHelp,Command,Ellipsis,Filter,Handshake,House,Layers3,LayoutDashboard,Menu,Plus,Search,Settings2,Target,TrendingUp,Users,X,Zap } from '@lucide/vue';
+import { Activity,ArrowDownRight,ArrowRight,ArrowUpRight,Bell,BriefcaseBusiness,Building2,CalendarDays,ChartNoAxesCombined,ChevronDown,ChevronRight,CircleDollarSign,CircleHelp,Command,Ellipsis,Filter,Handshake,House,Layers3,LayoutDashboard,Menu,Plus,Search,Settings2,Target,TrendingUp,Users,X,Zap } from '@lucide/vue';
 import PipelineRing from './PipelineRing.vue';
 import SalesTrend from './SalesTrend.vue';
 import { colors,money,sampleRecords,stages,type Opportunity } from '@/lib/commercial';
 import { dashboard,login } from '@/routes';
 import { store,update } from '@/routes/opportunities';
+import { notifySuccess } from '@/lib/flashToast';
 import { edit } from '@/routes/profile';
 import type {Team,User} from '@/types';
-const props=defineProps<{records?:Opportunity[]}>();
+const props=defineProps<{records?:Opportunity[];adminUsers?:AdminUser[];adminTeams?:AdminTeam[]}>();
 const page=usePage<{auth:{user:User|null}; currentTeam:Team|null}>();
 const demo=computed(()=>props.records===undefined);
 const examples=ref(sampleRecords());
 const all=computed(()=>props.records??examples.value);
-const section=ref('Resumen general'),modal=ref(''),query=ref(''),stage=ref('Todas'),mobile=ref(false),period=ref(0),notice=ref(''),detail=ref<Opportunity>();
+const section=ref('Resumen general'),modal=ref(''),query=ref(''),stage=ref('Todas'),mobile=ref(false),period=ref(0),detail=ref<Opportunity>();
 const form=useForm({name:'',company:'',amount:'',stage:stages[0]});
 const activeClient=ref<Client>();
 const clientPage=ref(1);
@@ -48,7 +50,7 @@ function go(s:string){selectSection(s);const hash=sections[s];if(window.location
 onMounted(()=>{restoreSection();window.addEventListener('popstate',restoreSection)});
 onUnmounted(()=>window.removeEventListener('popstate',restoreSection));
 function inspect(r:Opportunity){detail.value=r;modal.value='Detalle'}
-function saved(){modal.value='Oportunidades del cliente';clientPage.value=1;form.reset();notice.value='Oportunidad creada';setTimeout(()=>notice.value='',3000)}
+function saved(){modal.value='Oportunidades del cliente';clientPage.value=1;form.reset();notifySuccess('Oportunidad creada.')}
 function submit(){if(!activeClient.value)return;if(demo.value){examples.value.unshift({...form.data(),client_id:activeClient.value.id,client:{id:activeClient.value.id,name:activeClient.value.name},id:Date.now(),created_at:new Date().toISOString()});localStorage.setItem('pulso-extra',JSON.stringify(examples.value.filter(x=>x.id>1000)));saved()}else if(page.props.currentTeam){form.post(store.url([page.props.currentTeam.slug,activeClient.value.id]),{preserveScroll:true,onSuccess:saved})}}
 function changeStage(stage:string){
  const r=detail.value;if(!r)return;
@@ -64,7 +66,7 @@ onUnmounted(()=>window.removeEventListener('keydown',key));
 <div class="nav-wrap"><small>ESPACIO DE TRABAJO</small><button v-for="n in nav" :key="n.name" :class="{active:section===n.name||(section==='Kanban'&&n.name==='Clientes')}" @click="go(n.name)"><component :is="n.icon"/>{{n.name}}<span v-if="n.name===section" class="active-dot"></span></button><div class="nav-line"></div><small>PREFERENCIAS</small><button  :class="{active:section==='Configuración'}" @click="go('Configuración')"><Settings2/>Configuración</button><button @click="modal='Centro de ayuda'"><CircleHelp/>Centro de ayuda</button></div>
 <button class="user-box" @click="modal='Mi cuenta'"><b class="avatar">{{initials(name)}}</b><span><strong>{{name}}</strong><em>{{demo?'Espacio demo':'Mi cuenta'}}</em></span><ChevronDown :size="15"/></button></aside>
 <div class="main"><header><div class="breadcrumbs"><button class="mobile-toggle" aria-label="Abrir menú" @click="mobile=true"><Menu/></button><House :size="16"/><span>/</span> Mi espacio <span>/</span><b>{{section}}</b></div><div class="tools"><button class="search-btn" @click="query='';modal='Buscar'"><Search :size="15"/> Buscar... <kbd><Command :size="10"/> K</kbd></button><button class="bell" aria-label="Notificaciones" @click="modal='Notificaciones'"><Bell :size="18"/><i/></button><button class="avatar small" aria-label="Mi cuenta" @click="modal='Mi cuenta'">{{initials(name)}}</button></div></header>
-<main><CrmAdministration v-if="canAdminister && section==='Administración'"/><ClientWorkspace v-if="section==='Clientes'||section==='Kanban'||section==='Configuración'" :section="section" :demo="demo" @navigate="go" @opportunities="showClientDeals"/><template v-if="section==='Resumen general'">
+<main><CrmAdministration v-if="canAdminister && section==='Administración'" :users="adminUsers??[]" :teams="adminTeams??[]"/><ClientWorkspace v-if="section==='Clientes'||section==='Kanban'||section==='Configuración'" :section="section" :demo="demo" @navigate="go" @opportunities="showClientDeals"/><template v-if="section==='Resumen general'">
 <section class="hero"><svg class="waves" viewBox="0 0 800 190" preserveAspectRatio="none" aria-hidden="true"><path v-for="n in 42" :key="n" :d="`M${-110+n*6} 200 C${150+n*6} ${240-n*3},${170+n*7} ${-40+n*2},${365+n*6} ${65+n*2} S${640+n*7} ${235-n*4},${740+n*6} -25`" fill="none" stroke="white" opacity=".28" stroke-width="1"/></svg><div><div class="hero-label"><span></span> CENTRO DE CONTROL</div><h1>Panel comercial</h1><p>Una vista general del rendimiento de tu negocio.</p></div><button @click="go('Clientes')"><Users :size="16"/> Ver clientes</button></section>
 <div class="section-title"><div><div class="eyebrow"><i/> ANALÍTICA</div><h2>Resumen de rendimiento</h2></div><label class="select-btn"><CalendarDays :size="15"/><select v-model.number="period"><option :value="0">Este mes</option><option :value="1">Mes anterior</option></select><ChevronDown :size="13"/></label></div>
 <div class="metrics"><article v-for="(m,i) in metrics" :key="m.label"><div class="metric-top"><span>{{m.label}}</span><b :class="'tile c'+i"><component :is="m.icon" :size="17"/></b></div><strong>{{m.value}}</strong><div class="comparison"><span :class="{down:m.change<0}"><component :is="m.change<0?ArrowDownRight:ArrowUpRight" :size="12"/>{{m.change>0?'+':''}}{{m.change}}%</span> vs. mes anterior</div></article></div>
@@ -79,5 +81,5 @@ onUnmounted(()=>window.removeEventListener('keydown',key));
 <template v-else-if="modal==='Buscar'"><input v-model="query" v-focus placeholder="Buscar oportunidades o clientes"><button v-for="r in results.slice(0,8)" :key="r.id" class="list-item" @click="inspect(r)">{{r.name}} · {{accountName(r)}}<ChevronRight/></button><p v-if="!results.length">Sin resultados.</p></template>
 <template v-else-if="modal==='Detalle'&&detail"><h3>{{detail.name}}</h3><p>{{accountName(detail)}}</p><div class="list-item">Etapa <select :value="detail.stage" @change="changeStage(($event.target as HTMLSelectElement).value)"><option v-for="s in stages" :key="s">{{s}}</option></select></div><div class="list-item">Valor <b>{{money(+detail.amount)}}</b></div></template>
 <p v-else-if="modal==='Notificaciones'">No tienes notificaciones pendientes.</p><p v-else-if="modal==='Centro de ayuda'">Abre Clientes, elige «Oportunidades» junto al cliente y pulsa «Nueva oportunidad». Registra su importe y etapa comercial. Consulta tus registros desde Oportunidades o búscalos con Ctrl + K.</p>
-<template v-else><p>{{demo?'Estás explorando el espacio de demostración. Accede a tu cuenta para trabajar con los datos de tu equipo.':name}}</p><Link class="primary" :href="demo?(page.props.currentTeam?dashboard(page.props.currentTeam.slug):login()):edit()">{{demo?'Ir a mi espacio':'Ajustes de perfil'}} <ArrowRight :size="15"/></Link></template></section></div><div v-if="notice" class="toast"><Check :size="16"/>{{notice}}</div></div></template>
+<template v-else><p>{{demo?'Estás explorando el espacio de demostración. Accede a tu cuenta para trabajar con los datos de tu equipo.':name}}</p><Link class="primary" :href="demo?(page.props.currentTeam?dashboard(page.props.currentTeam.slug):login()):edit()">{{demo?'Ir a mi espacio':'Ajustes de perfil'}} <ArrowRight :size="15"/></Link></template></section></div></div></template>
 <style src="../../css/commercial.css"></style>
